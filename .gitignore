@@ -1,0 +1,185 @@
+#include <AFMotor.h>
+
+AF_DCMotor motor1(1);
+AF_DCMotor motor2(2);
+
+
+#include <NewPing.h>
+
+#define TRIGGER_PIN  A0  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define ECHO_PIN     A1  // Arduino pin tied to echo pin on the ultrasonic sensor.
+#define MAX_DISTANCE 30 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
+
+
+
+//------------Variables del Programa---------
+//#define debug
+
+const int frente_izq=A4;
+const int frente_der=A3;
+const int atras=A2;
+
+const int pulsador=10;
+const int vuelta= 40;
+const int vuelta2= 50;
+
+const int mini=0;
+const int maxi=25;
+
+const int tiempo_stop=10;
+const int tiempo_giro=50;
+const int tiempo_atras=10;
+const int tiempo_frente=10;
+const int tiempo_avanza = 30;
+
+int sensor_izq=0;
+int sensor_der=0;
+int sensor_atr=0;
+int velmax =145;
+int aux=1;
+int velocidad=130;
+int posicion = 0;
+
+
+
+
+
+void setup()
+{
+ #ifdef debug
+ Serial.begin(9600);
+ #endif
+ 
+ pinMode(TriggerPin, OUTPUT);
+ pinMode(EchoPin, INPUT);
+  pinMode(pulsador, INPUT);
+
+ pinMode(MOTORLATCH, OUTPUT);
+ pinMode(MOTORENABLE, OUTPUT);
+ pinMode(MOTORDATA, OUTPUT);
+ pinMode(MOTORCLK, OUTPUT);
+
+}
+
+void loop()
+{
+ 
+ while(digitalRead(pulsador)==LOW)
+{
+ #ifdef debug
+ Serial.print("Boton Arranque\n");
+ #endif
+  
+ delay(50);
+}
+
+while(1)
+ {
+    movimiento_stop();
+    delay (tiempo_stop);
+    int dist=sonar.ping_cm();
+    
+    while ((dist>mini)&&(dist<maxi))
+    { 
+      test_sensores();
+      velocidad= velocidad;
+      movimiento_frente();
+      delay(tiempo_avanza);
+      dist=sonar.ping_cm();
+     }
+     
+    posicion=posicion+1;
+     
+    if (posicion<vuelta)
+    {
+    test_sensores();  
+    velocidad =130;
+    movimiento_izq();
+    delay(tiempo_giro);
+    }
+      
+     if (posicion>=vuelta)
+     {
+      test_sensores();
+      movimiento_frente();
+      delay(tiempo_avanza);
+      if(posicion>=vuelta2)
+      posicion=0;
+     }
+     
+     
+  }
+}
+
+//-------------Definicion de libreria de movimiento ------------
+
+
+ void test_sensores(void)
+{
+  sensor_izq = digitalRead(frente_izq);
+  sensor_der = digitalRead(frente_der);
+  sensor_atr = digitalRead(atras);
+  
+  if((sensor_izq==1)||(sensor_der==1))
+   {
+    movimiento_stop();
+    delay (tiempo_stop);
+    
+    velocidad= velocidad;
+    movimiento_atras();
+    delay (300); 
+   }
+  if(sensor_atr==1)
+   {
+    movimiento_stop();
+    delay (tiempo_stop);
+    
+   velocidad= velocidad;
+   movimiento_frente();
+   delay (300); 
+   } 
+}
+
+ void movimiento_stop(void)
+{
+
+  motor1.setSpeed(velocidad);  
+  motor2.setSpeed(velocidad); 
+  motor1.run(RELEASE);
+  motor2.run(RELEASE);
+}
+
+void movimiento_frente(void)
+{ if(velocidad<=velmax)    aux++;
+  velocidad=velocidad+aux;
+   motor1.setSpeed(velocidad);  
+ motor2.setSpeed(velocidad); 
+  motor1.run(BACKWARD);
+  motor2.run(BACKWARD);
+}
+
+void movimiento_atras(void)
+{
+   motor1.setSpeed(velocidad);  
+   motor2.setSpeed(velocidad); 
+  motor1.run(FORWARD);
+  motor2.run(FORWARD);
+}
+
+void movimiento_der(void)
+{
+   motor1.setSpeed(velocidad);  
+   motor2.setSpeed(velocidad); 
+   motor1.run(BACKWARD);
+   motor2.run(FORWARD);
+}
+
+void movimiento_izq(void)
+{
+   motor1.setSpeed(velocidad);  
+   motor2.setSpeed(velocidad); 
+    motor1.run(FORWARD);
+    motor2.run(BACKWARD);
+}
